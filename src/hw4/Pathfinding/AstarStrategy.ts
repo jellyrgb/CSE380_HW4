@@ -20,6 +20,10 @@ export default class AstarStrategy extends NavPathStrat {
      * @see NavPathStrat.buildPath()
      */
     public buildPath(to: Vec2, from: Vec2): NavigationPath {
+        const path = new NavigationPath(new Stack());
+
+        
+        
         return new NavigationPath(new Stack());
     }
     
