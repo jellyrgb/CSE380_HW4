@@ -55,6 +55,16 @@ export default class NavigationPath implements Path<Vec2> {
 		}
 	}
 
+	/**
+     * Adds a waypoint to the navigation path
+     * @param waypoint The waypoint to add
+     */
+    addWaypoint(waypoint: Vec2): void {
+        // Here, you can add logic to handle the addition of waypoints to the path
+        // For example, you could push the waypoint onto the path stack
+        this.path.push(waypoint);
+    }
+
 	toString(): string {
 		return this.path.toString()
 	}

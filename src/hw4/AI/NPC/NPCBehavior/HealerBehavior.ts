@@ -61,6 +61,12 @@ export default class HealerBehavior extends NPCBehavior  {
         pickupHpack.cost = 100;
         this.addState(HealerActions.PICKUP_HPACK, pickupHpack);
 
+        // Use healthpack action
+        let useHpack = new UseHealthpack(this, this.owner);
+        useHpack.addEffect(HealerStatuses.GOAL);
+        useHpack.cost = 100;
+        this.addState(HealerActions.USE_HPACK, useHpack);
+
         /* ######### Set the healers goal ######## */
 
         this.goal = HealerStatuses.GOAL;

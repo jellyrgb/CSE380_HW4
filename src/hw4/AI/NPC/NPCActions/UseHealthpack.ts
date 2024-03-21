@@ -17,12 +17,19 @@ export default class UseHealthpack extends NPCAction {
     // The target we are going to set the actor to target
     protected override _target: Battler | null;
 
+    protected healthpack: Healthpack;
+
     public constructor(parent: NPCBehavior, actor: NPCActor) { 
         super(parent, actor);
+        //init healthpack as null
     }
 
     public performAction(target: Battler): void {
-
+        // Use the healthpack
+        //check to see if healthpack null
+        if (this.actor.inventory.has(this.healthpack.id)) {
+            this.actor.health
+        }
     }
 
 }
