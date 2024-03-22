@@ -7,13 +7,13 @@ import GraphUtils from "../../Wolfie2D/Utils/GraphUtils";
 // TODO Construct a NavigationPath object using A*
 
 class Node {
-    position: Vec2;
+    index: number;
     gCost: number;
     hCost: number;
     parent: Node | null;
 
-    constructor(position: Vec2) {
-        this.position = position; 
+    constructor(index: number) {
+        this.index = index; 
         this.gCost = 0;
         this.hCost = 0;
         this.parent = null;
@@ -22,8 +22,6 @@ class Node {
     get fCost(): number {
         return this.gCost + this.hCost;
     }
-
-    //get for parent
 }
 
 /**
@@ -41,19 +39,19 @@ export default class AstarStrategy extends NavPathStrat {
      */
     public buildPath(to: Vec2, from: Vec2): NavigationPath {
 
-        console.log("Building path!");
         const path = new NavigationPath(new Stack());
-        const startNode = new Node(from);
-        const targetNode = new Node(to);
+        const startNodeIndex = this.mesh.graph.snap(from);
+        const targetNodeIndex = this.mesh.graph.snap(to);
 
         const openList: Node[] = [];
         const closedList: Node[] = [];
 
-        openList.push(startNode);
+        openList.push(new Node(startNodeIndex));
 
-        while (openList.length > 0) {
-            console.log("While loop");
-            let currentNode = openList[0];
+        let currentNode = openList[0];
+        let count = 1;
+
+        while (currentNode !== null) {
             for (let i = 1; i < openList.length; i++) {
                 if (openList[i].fCost < currentNode.fCost || 
                     (openList[i].fCost === currentNode.fCost && openList[i].hCost < currentNode.hCost)) {
@@ -68,29 +66,29 @@ export default class AstarStrategy extends NavPathStrat {
             //use vec2 to get node index
             //this.mesh.graph.snap(vec2);
 
-
             //use index to get edges adjacent (not collidable)
             //let e = this.mesh.graph.getEdges()
             //while (e) { ... e.next}
             //don't return here
-            if (currentNode.position.equals(targetNode.position)) {
-                return this.constructPath(currentNode, startNode, path);
+            if (currentNode.index === targetNodeIndex) {
+                break;
             }
 
-            const neighbors = this.getNeighbors(currentNode.position);
-            for (const neighborPos of neighbors) {
-                const neighborNode = new Node(neighborPos);
-                if (!this.nodeInArray(neighborNode, closedList)) {
-                    const newMovementCostToNeighbor = currentNode.gCost + currentNode.position.distanceSqTo(neighborPos);
+            const neighbors = this.mesh.graph.getEdges(currentNode.index);
 
-                    //here should be check to see if in openList, if in
-                    // check if cost is lower then update if is
-                    //if not in, then just add new
-                    //check to see if the neighbor is equal to the end node
-                    //if end node then you break and add to close list
-                    if (newMovementCostToNeighbor < neighborNode.gCost || !this.nodeInArray(neighborNode, openList)) {
-                        neighborNode.gCost = newMovementCostToNeighbor;
-                        neighborNode.hCost = neighborPos.distanceSqTo(targetNode.position);
+            let edge = neighbors.next;
+
+            while(edge) {
+                const neighborIndex = edge.y;
+                const neighborNode = new Node(neighborIndex);
+
+                if (!this.nodeInArray(neighborNode, closedList)) {
+                    const newGCostToNeighbor = currentNode.gCost + edge.weight;
+                    const newHCostToNeighbor = this.mesh.graph.getNodePosition(neighborIndex).distanceSqTo(to);
+
+                    if (newGCostToNeighbor < neighborNode.gCost || !this.nodeInArray(neighborNode, openList)) {
+                        neighborNode.gCost = newGCostToNeighbor;
+                        neighborNode.hCost = newHCostToNeighbor;
                         neighborNode.parent = currentNode;
 
                         if (!this.nodeInArray(neighborNode, openList)) {
@@ -98,28 +96,30 @@ export default class AstarStrategy extends NavPathStrat {
                         }
                     }
                 }
+
+                edge = neighbors.next;
             }
+
+            //get the next node
+            currentNode = openList[count++];
         }
+
         //break out of loop create path
         //get the end node with parent
         //loop through while(node.parent != null) { push to stack; node = node.parent}
-        return path;
+        // If the while loop breaks, check if we reached the target node
+        if (closedList[closedList.length - 1].index === targetNodeIndex) {
+            return this.constructPath(closedList[closedList.length - 1], startNodeIndex, path);
+        } else {
+            return path; // No path found
+        }
     }
 
-    private getNeighbors(position: Vec2): Vec2[] {
-        const neighbors: Vec2[] = [];
-        neighbors.push(new Vec2(position.x + 8, position.y));
-        neighbors.push(new Vec2(position.x - 8, position.y));
-        neighbors.push(new Vec2(position.x, position.y + 8));
-        neighbors.push(new Vec2(position.x, position.y - 8));
-        return neighbors;
-    }
-
-    private constructPath(currentNode: Node, startNode: Node, path: NavigationPath): NavigationPath {
+    private constructPath(currentNode: Node, startNodeIndex: number, path: NavigationPath): NavigationPath {
         const nodeStack = new Stack<Vec2>();
         let currentNodeRef = currentNode;
-        while (currentNodeRef !== startNode) {
-            nodeStack.push(currentNodeRef.position);
+        while (currentNodeRef.index !== startNodeIndex) {
+            nodeStack.push(this.mesh.graph.getNodePosition(currentNodeRef.index));
             currentNodeRef = currentNodeRef.parent;
         }
         while (!nodeStack.isEmpty()) {
@@ -130,7 +130,7 @@ export default class AstarStrategy extends NavPathStrat {
 
     private nodeInArray(node: Node, nodeList: Node[]): boolean {
         for (const n of nodeList) {
-            if (n.position.equals(node.position)) {
+            if (n.index === node.index) {
                 return true;
             }
         }
